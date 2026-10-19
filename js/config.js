@@ -9,9 +9,9 @@ const CONFIG_STORAGE_KEY = 'lumina_gallery_config';
 
 // Default configuration
 const defaultConfig = {
-  // If hosted on GitHub Pages, these will auto-detect if left blank
-  username: '',
-  repo: '',
+  // Configured for theuzumaki106-ai/gallery
+  username: 'theuzumaki106-ai',
+  repo: 'gallery',
   folder: 'photos',
   branch: 'main',
   token: '', // Personal access token with repo/contents:write permission for direct uploads
@@ -20,6 +20,7 @@ const defaultConfig = {
   // SHA-256 hash of default password 'admin123'
   adminPasswordHash: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
 };
+
 
 class GalleryConfig {
   constructor() {
