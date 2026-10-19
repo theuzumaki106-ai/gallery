@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumina Gallery — Automated GitHub Photography Portfolio</title>
+  <meta name="description" content="A modern, automated photo gallery that syncs directly with your GitHub repository.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for UI -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Background Ambient Glow -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Header / Navigation -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a href="#" class="logo">
+          <span class="logo-icon"><i class="fa-solid fa-camera-retro"></i></span>
+          <span class="logo-text">LUMINA</span>
+        </a>
+        <span class="badge live-badge" id="syncStatusBadge">
+          <span class="status-dot"></span>
+          <span id="syncStatusText">GitHub Synced</span>
+        </span>
+      </div>
+
+      <!-- Center Search & Filter -->
+      <div class="header-search">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Search photos by title, tag, or camera..." autocomplete="off">
+        <button id="clearSearchBtn" class="clear-search-btn" title="Clear search" style="display: none;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Action Tools -->
+      <div class="header-actions">
+        <!-- Layout Switcher -->
+        <div class="layout-toggle" role="group" aria-label="Layout mode">
+          <button class="icon-btn active" id="layoutMasonryBtn" title="Masonry View">
+            <i class="fa-solid fa-table-cells"></i>
+          </button>
+          <button class="icon-btn" id="layoutGridBtn" title="Square Grid View">
+            <i class="fa-solid fa-border-all"></i>
+          </button>
+          <button class="icon-btn" id="layoutColumnsBtn" title="Editorial Feed">
+            <i class="fa-solid fa-square"></i>
+          </button>
+        </div>
+
+        <!-- Slideshow trigger -->
+        <button class="btn btn-secondary" id="startSlideshowBtn" title="Start Fullscreen Slideshow">
+          <i class="fa-solid fa-play"></i>
+          <span>Slideshow</span>
+        </button>
+
+        <!-- Upload button (Protected with Password) -->
+        <button class="btn btn-primary" id="openUploadBtn" title="Upload Photos to Gallery">
+          <i class="fa-solid fa-lock" id="uploadBtnLockIcon"></i>
+          <span id="uploadBtnText">Upload Photos</span>
+        </button>
+
+        <!-- Admin Session Pill (visible when unlocked) -->
+        <div class="admin-session-pill" id="adminSessionPill" style="display: none;">
+          <span class="admin-session-tag"><i class="fa-solid fa-shield-halved"></i> Admin</span>
+          <button class="icon-btn-sm" id="lockSessionBtn" title="Lock Studio Access">
+            <i class="fa-solid fa-lock"></i>
+          </button>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="icon-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+          <i class="fa-solid fa-sun light-icon"></i>
+          <i class="fa-solid fa-moon dark-icon"></i>
+        </button>
+
+        <!-- Settings Modal Trigger -->
+        <button class="icon-btn" id="openSettingsBtn" title="Repository Settings">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero / Portfolio Introduction -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <p class="hero-subtitle">PHOTOGRAPHY & VISUAL STORIES</p>
+      <h1 class="hero-title" id="galleryTitle">Captured Moments</h1>
+      <p class="hero-description" id="gallerySubtitle">
+        Automated living gallery synced directly from our GitHub repository. Upload any image to the repository to showcase it here instantly.
+      </p>
+      
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-value" id="photoCount">0</span>
+          <span class="stat-label">Photos</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value" id="categoryCount">0</span>
+          <span class="stat-label">Categories</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value" id="repoNameDisplay">Connected</span>
+          <span class="stat-label">GitHub Source</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Controls Bar: Category Pills + Sorting -->
+  <section class="controls-section">
+    <div class="controls-inner">
+      <!-- Dynamic Category Pills -->
+      <div class="categories-wrapper">
+        <div class="categories-list" id="categoriesList">
+          <button class="pill active" data-category="all">All Photos</button>
+          <!-- Dynamically populated from tags/categories -->
+        </div>
+      </div>
+
+      <!-- Sorting & Filter Options -->
+      <div class="sort-wrapper">
+        <div class="dropdown">
+          <button class="dropdown-trigger btn-secondary" id="sortDropdownTrigger">
+            <i class="fa-solid fa-arrow-down-short-wide"></i>
+            <span id="currentSortLabel">Newest First</span>
+            <i class="fa-solid fa-chevron-down arrow-down"></i>
+          </button>
+          <div class="dropdown-menu" id="sortDropdownMenu">
+            <button class="dropdown-item active" data-sort="newest">
+              <i class="fa-solid fa-calendar-day"></i> Newest First
+            </button>
+            <button class="dropdown-item" data-sort="oldest">
+              <i class="fa-solid fa-calendar-alt"></i> Oldest First
+            </button>
+            <button class="dropdown-item" data-sort="name-asc">
+              <i class="fa-solid fa-arrow-down-a-z"></i> Name (A to Z)
+            </button>
+            <button class="dropdown-item" data-sort="name-desc">
+              <i class="fa-solid fa-arrow-up-z-a"></i> Name (Z to A)
+            </button>
+            <button class="dropdown-item" data-sort="random">
+              <i class="fa-solid fa-shuffle"></i> Random Shuffle
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Favorites Only -->
+        <button class="icon-btn favorite-filter-btn" id="favoritesFilterBtn" title="Show Favorites Only">
+          <i class="fa-regular fa-heart"></i>
+          <span class="favorites-badge" id="favoritesCount" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Photo Gallery Canvas -->
+  <main class="gallery-container">
+    <!-- Notice Banner (if using demo mode or local preview) -->
+    <div class="demo-banner" id="demoBanner" style="display: none;">
+      <div class="demo-banner-content">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Currently showcasing <strong>Sample Demo Photography</strong>. Connect your GitHub repository in <strong>Settings</strong> to load your live photos!</span>
+      </div>
+      <button class="btn btn-sm btn-primary" id="connectRepoBannerBtn">Connect GitHub</button>
+    </div>
+
+    <!-- Loading Skeleton Screen -->
+    <div class="gallery-skeleton" id="gallerySkeleton">
+      <div class="skeleton-card h-large"></div>
+      <div class="skeleton-card h-medium"></div>
+      <div class="skeleton-card h-tall"></div>
+      <div class="skeleton-card h-small"></div>
+      <div class="skeleton-card h-medium"></div>
+      <div class="skeleton-card h-large"></div>
+      <div class="skeleton-card h-small"></div>
+      <div class="skeleton-card h-tall"></div>
+    </div>
+
+    <!-- Active Gallery Grid -->
+    <div class="gallery-grid layout-masonry" id="galleryGrid">
+      <!-- Photos will be inserted dynamically here -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-state-icon">
+        <i class="fa-regular fa-images"></i>
+      </div>
+      <h3 class="empty-state-title">No photos found</h3>
+      <p class="empty-state-text" id="emptyStateText">
+        Try adjusting your search query or category filters, or upload your first photo to GitHub!
+      </p>
+      <button class="btn btn-primary" id="emptyStateActionBtn">
+        <i class="fa-brands fa-github"></i> Upload to GitHub
+      </button>
+    </div>
+  </main>
+
+  <!-- Interactive Lightbox Modal -->
+  <div class="lightbox" id="lightbox" aria-hidden="true" role="dialog">
+    <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+    
+    <!-- Lightbox Top Bar -->
+    <div class="lightbox-header">
+      <div class="lightbox-info">
+        <h4 class="lightbox-title" id="lightboxTitle">Photo Title</h4>
+        <span class="lightbox-counter" id="lightboxCounter">1 / 12</span>
+      </div>
+      <div class="lightbox-actions">
+        <!-- Zoom controls -->
+        <button class="lightbox-btn" id="lightboxZoomOutBtn" title="Zoom Out ( - )">
+          <i class="fa-solid fa-magnifying-glass-minus"></i>
+        </button>
+        <button class="lightbox-btn" id="lightboxZoomInBtn" title="Zoom In ( + )">
+          <i class="fa-solid fa-magnifying-glass-plus"></i>
+        </button>
+        <button class="lightbox-btn" id="lightboxZoomResetBtn" title="Reset Zoom">
+          <i class="fa-solid fa-compress"></i>
+        </button>
+
+        <!-- Like / Favorite -->
+        <button class="lightbox-btn" id="lightboxLikeBtn" title="Add to Favorites">
+          <i class="fa-regular fa-heart"></i>
+        </button>
+
+        <!-- Download original -->
+        <a href="#" class="lightbox-btn" id="lightboxDownloadBtn" download title="Download Photo">
+          <i class="fa-solid fa-arrow-down-to-bracket"></i>
+        </a>
+
+        <!-- Copy Image Link -->
+        <button class="lightbox-btn" id="lightboxCopyLinkBtn" title="Copy Direct Image Link">
+          <i class="fa-solid fa-link"></i>
+        </button>
+
+        <!-- Toggle Info / EXIF Panel -->
+        <button class="lightbox-btn" id="lightboxInfoBtn" title="Toggle EXIF Details (I)">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+
+        <!-- Fullscreen toggle -->
+        <button class="lightbox-btn" id="lightboxFullscreenBtn" title="Toggle Fullscreen (F)">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+
+        <!-- Close button -->
+        <button class="lightbox-btn close-btn" id="lightboxCloseBtn" title="Close (Esc)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Slideshow Timer Bar -->
+    <div class="slideshow-progress-bar" id="slideshowProgressBar"></div>
+
+    <!-- Lightbox Main Stage -->
+    <div class="lightbox-stage" id="lightboxStage">
+      <!-- Previous Button -->
+      <button class="lightbox-nav-btn prev-btn" id="lightboxPrevBtn" title="Previous Photo (Left Arrow)">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <!-- Image Canvas & Wrapper -->
+      <div class="lightbox-image-wrapper" id="lightboxImageWrapper">
+        <img src="" alt="" id="lightboxImage" class="lightbox-img">
+        <div class="lightbox-spinner" id="lightboxSpinner">
+          <i class="fa-solid fa-circle-notch fa-spin"></i>
+        </div>
+      </div>
+
+      <!-- Next Button -->
+      <button class="lightbox-nav-btn next-btn" id="lightboxNextBtn" title="Next Photo (Right Arrow)">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
+      <!-- Sidebar / EXIF Details Drawer -->
+      <aside class="lightbox-drawer" id="lightboxDrawer">
+        <div class="drawer-header">
+          <h3>Photo Details & EXIF</h3>
+          <button class="drawer-close-btn" id="closeDrawerBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="drawer-content">
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-tag"></i> File Name</span>
+            <span class="exif-value" id="exifFilename">—</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-layer-group"></i> Category</span>
+            <span class="exif-value" id="exifCategory">—</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-hard-drive"></i> File Size</span>
+            <span class="exif-value" id="exifSize">—</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-expand"></i> Dimensions</span>
+            <span class="exif-value" id="exifDimensions">—</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-camera"></i> Camera</span>
+            <span class="exif-value" id="exifCamera">Sony Alpha A7 IV</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-bullseye"></i> Lens</span>
+            <span class="exif-value" id="exifLens">FE 24-70mm f/2.8 GM</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-solid fa-sliders"></i> Exposure</span>
+            <span class="exif-value" id="exifExposure">1/250s at f/2.8, ISO 100</span>
+          </div>
+          <div class="exif-group">
+            <span class="exif-label"><i class="fa-brands fa-github"></i> GitHub Source</span>
+            <a href="#" target="_blank" class="exif-link" id="exifGithubLink">View file in GitHub &nearr;</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Lightbox Bottom Filmstrip -->
+    <div class="lightbox-filmstrip" id="lightboxFilmstrip">
+      <div class="filmstrip-track" id="filmstripTrack">
+        <!-- Thumbnail items will be rendered here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Authentication Modal -->
+  <div class="modal" id="passwordModal" aria-hidden="true">
+    <div class="modal-backdrop" id="passwordBackdrop"></div>
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="auth-icon-wrap">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Admin Access</h3>
+            <p class="modal-subtitle">Enter password to unlock photo uploads</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closePasswordBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="passwordForm" onsubmit="return false;">
+          <div class="form-group">
+            <label for="adminPasswordInput">Admin Passcode</label>
+            <div class="password-input-wrap">
+              <i class="fa-solid fa-key password-field-icon"></i>
+              <input type="password" id="adminPasswordInput" placeholder="Enter password..." autocomplete="current-password">
+              <button type="button" class="toggle-password-btn" id="togglePasswordBtn" title="Show or Hide Password">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+            <p class="password-error-msg" id="passwordErrorMsg" style="display: none;">
+              <i class="fa-solid fa-circle-exclamation"></i> Incorrect password. Please try again.
+            </p>
+          </div>
+
+          <div class="auth-remember-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="rememberSessionCheck" checked>
+              <span>Keep unlocked for this session</span>
+            </label>
+          </div>
+
+          <div class="password-hint-box">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+              Default password: <code class="code-badge">admin123</code><br>
+              <small>You can change this password anytime in Settings.</small>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelPasswordBtn">Cancel</button>
+        <button class="btn btn-primary" id="submitPasswordBtn">
+          <i class="fa-solid fa-lock-open"></i> Unlock Studio
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Upload Studio Modal (Protected) -->
+  <div class="modal" id="uploadStudioModal" aria-hidden="true">
+    <div class="modal-backdrop" id="uploadStudioBackdrop"></div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="auth-icon-wrap unlocked">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Photo Upload Studio</h3>
+            <p class="modal-subtitle">Upload photos directly into your GitHub repository</p>
+          </div>
+        </div>
+        <div class="modal-header-actions">
+          <button class="btn btn-sm btn-secondary" id="switchUploadTabBtn">
+            <i class="fa-brands fa-github"></i> <span id="switchTabBtnText">GitHub Manual Guide</span>
+          </button>
+          <button class="modal-close-btn" id="closeUploadStudioBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Direct In-Browser Upload -->
+      <div class="modal-body" id="uploadTabDirect">
+        <!-- Dropzone -->
+        <div class="upload-dropzone" id="uploadDropzone">
+          <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" style="display: none;">
+          <div class="dropzone-art">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <h4 class="dropzone-title">Click to select photo or drag &amp; drop here</h4>
+          <p class="dropzone-desc">Supports JPEG, PNG, WebP, GIF, AVIF</p>
+          <button type="button" class="btn btn-secondary btn-sm" id="browseFileBtn">
+            <i class="fa-solid fa-folder-open"></i> Select Photo
+          </button>
+        </div>
+
+        <!-- File Preview & Metadata Form (Shown once photo is selected) -->
+        <div class="upload-preview-panel" id="uploadPreviewPanel" style="display: none;">
+          <div class="preview-layout">
+            <div class="preview-img-container">
+              <img id="uploadImgPreview" src="" alt="Photo Preview">
+              <div class="preview-badge" id="previewFileSize">2.4 MB</div>
+            </div>
+
+            <div class="preview-form">
+              <div class="form-group">
+                <label for="uploadPhotoTitle">Photo Title <span class="required">*</span></label>
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-heading"></i>
+                  <input type="text" id="uploadPhotoTitle" placeholder="e.g. Alpine Sunrise at Lake Moraine" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="uploadPhotoCategory">Category <span class="required">*</span></label>
+                  <select id="uploadPhotoCategory" class="custom-select">
+                    <option value="Anime">Anime &amp; Sketches</option>
+                    <option value="Nature">Nature</option>
+                    <option value="Architecture">Architecture</option>
+                    <option value="Street">Street</option>
+                    <option value="Portraits">Portraits</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Minimalism">Minimalism</option>
+                    <option value="Wildlife">Wildlife</option>
+                    <option value="Macro">Macro</option>
+                    <option value="Custom">Custom...</option>
+                  </select>
+
+                </div>
+
+                <div class="form-group flex-1" id="customCategoryGroup" style="display: none;">
+                  <label for="uploadCustomCategory">Custom Category Name</label>
+                  <input type="text" id="uploadCustomCategory" placeholder="e.g. Astro">
+                </div>
+              </div>
+
+              <div class="file-destination-preview">
+                <span class="dest-label"><i class="fa-brands fa-github"></i> Will commit to GitHub as:</span>
+                <code class="code-badge" id="destFilenamePreview">photos/nature-photo.jpg</code>
+              </div>
+
+              <!-- GitHub Token Box (needed to commit directly) -->
+              <div class="form-group upload-token-box" id="uploadTokenBox">
+                <label for="uploadTokenInput">GitHub Personal Access Token <span class="required">*</span></label>
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-key"></i>
+                  <input type="password" id="uploadTokenInput" placeholder="ghp_xxxx (classic or fine-grained token)">
+                </div>
+                <span class="form-hint">
+                  Required to commit photos directly to GitHub (needs <code>repo</code> or <code>Contents: Write</code> permissions).
+                  <a href="https://github.com/settings/tokens/new" target="_blank" class="token-helper-link">Generate Token &nearr;</a>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Progress Status -->
+          <div class="upload-progress-container" id="uploadProgressContainer" style="display: none;">
+            <div class="upload-progress-bar-wrap">
+              <div class="upload-progress-bar" id="uploadProgressBar"></div>
+            </div>
+            <div class="upload-status-text" id="uploadStatusText">Committing photo to repository...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Manual GitHub Guide -->
+      <div class="modal-body" id="uploadTabGuide" style="display: none;">
+        <div class="guide-steps">
+          <div class="guide-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Open your repository on GitHub</h4>
+              <p>Navigate to your repository and open the <code class="code-badge">photos/</code> folder. (If you don't have one, create it by uploading an image into it).</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Drag &amp; Drop or Upload your photos</h4>
+              <p>Click <strong>Add file &rarr; Upload files</strong>. Simply drag &amp; drop any images (<code class="code-badge">.jpg</code>, <code class="code-badge">.png</code>, <code class="code-badge">.webp</code>, <code class="code-badge">.gif</code>). Then click the green <strong>Commit changes</strong> button.</p>
+              
+              <div class="tip-box">
+                <i class="fa-solid fa-lightbulb"></i>
+                <div>
+                  <strong>Pro Tip — Smart Category Tagging:</strong><br>
+                  Name your images with a category prefix to automatically categorize them! E.g.:<br>
+                  <code>nature-sunset-beach.jpg</code> &rarr; categorized as <strong>Nature</strong><br>
+                  <code>architecture_tokyo_tower.jpg</code> &rarr; categorized as <strong>Architecture</strong><br>
+                  <code>street-rainy-night.jpg</code> &rarr; categorized as <strong>Street</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Instant Automatic Sync!</h4>
+              <p>When you or any visitor loads this website, the gallery automatically fetches the contents of your <code class="code-badge">photos/</code> folder via the GitHub API and renders the photos in high resolution!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-left-actions">
+          <button class="btn btn-secondary btn-sm" id="chooseAnotherFileBtn" style="display: none;">
+            <i class="fa-solid fa-arrow-rotate-left"></i> Change Photo
+          </button>
+          <button class="btn btn-secondary btn-sm" id="openDirectGithubFolderBtn">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open GitHub Photos Folder
+          </button>
+        </div>
+        <div class="footer-right-actions">
+          <button class="btn btn-secondary" id="closeUploadStudioFooterBtn">Close</button>
+          <button class="btn btn-primary" id="startUploadBtn" style="display: none;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload to GitHub Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Settings Modal: Config GitHub Username & Repo -->
+  <div class="modal" id="settingsModal" aria-hidden="true">
+    <div class="modal-backdrop" id="settingsBackdrop"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-sliders modal-icon"></i>
+          <div>
+            <h3 class="modal-title">Gallery Configuration</h3>
+            <p class="modal-subtitle">Configure your GitHub repo to fetch photos automatically.</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeSettingsBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="settingsForm" class="settings-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="cfgUsername">GitHub Username or Organization <span class="required">*</span></label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="cfgUsername" placeholder="e.g. viswajeet" required>
+            </div>
+            <span class="form-hint">The GitHub account where your repository is hosted.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgRepo">Repository Name <span class="required">*</span></label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-book-bookmark"></i>
+              <input type="text" id="cfgRepo" placeholder="e.g. my-photo-gallery" required>
+            </div>
+            <span class="form-hint">The name of the repository containing your photos.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgFolder">Photos Folder in Repo</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-folder"></i>
+              <input type="text" id="cfgFolder" placeholder="photos" value="photos">
+            </div>
+            <span class="form-hint">The subfolder where you upload images (default: photos).</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgBranch">Branch Name</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-code-branch"></i>
+              <input type="text" id="cfgBranch" placeholder="main" value="main">
+            </div>
+            <span class="form-hint">Branch name (usually "main" or "master").</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgToken">Optional GitHub Token (Personal Access Token)</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-key"></i>
+              <input type="password" id="cfgToken" placeholder="ghp_xxxx (optional)">
+            </div>
+            <span class="form-hint">Only needed for private repositories or to increase API limits (up to 5,000 req/hr).</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgTitle">Gallery Header Title</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-heading"></i>
+              <input type="text" id="cfgTitle" placeholder="Captured Moments" value="Captured Moments">
+            </div>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <!-- Admin Security & Passcode -->
+          <div class="settings-section-heading">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Upload Access &amp; Admin Password</span>
+          </div>
+
+          <div class="form-group">
+            <label for="cfgNewPassword">Change Admin Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="cfgNewPassword" placeholder="Enter new password (leave blank to keep current)">
+            </div>
+            <span class="form-hint">Used to protect the Photo Upload Studio from unauthorized visitors.</span>
+          </div>
+        </form>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="resetDemoBtn">Reset to Sample Demo</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">
+          <i class="fa-solid fa-floppy-disk"></i> Save &amp; Refresh Gallery
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-logo">LUMINA</span>
+        <span class="footer-copy">&copy; 2026 Powered by GitHub Pages &amp; REST API.</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com" target="_blank" id="footerGithubLink" class="footer-link">
+          <i class="fa-brands fa-github"></i> Repository
+        </a>
+        <a href="#top" class="footer-link back-to-top" id="backToTopBtn">
+          Back to Top <i class="fa-solid fa-arrow-up"></i>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/sample-data.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/github-api.js"></script>
+  <script src="js/lightbox.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
